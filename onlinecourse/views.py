@@ -154,8 +154,9 @@ def submit(request, course_id):
         submission_id=submission.id,
     )
 
-
 def show_exam_result(request, course_id, submission_id):
+    from django.http import HttpResponseForbidden
+
     course = get_object_or_404(Course, pk=course_id)
     submission = get_object_or_404(
         Submission,
@@ -163,44 +164,62 @@ def show_exam_result(request, course_id, submission_id):
         enrollment__course=course,
     )
 
-    if request.user.is_authenticated and submission.enrollment.user != request.user:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("You cannot view another learner's result.")
+    if (
+        request.user.is_authenticated
+        and submission.enrollment.user != request.user
+    ):
+        return HttpResponseForbidden(
+            "You cannot view another learner's result."
+        )
 
-    questions = Question.objects.filter(course=course).prefetch_related("choices")
+    questions = Question.objects.filter(
+        course=course
+    ).prefetch_related("choices")
+
     selected_ids = set(
         submission.choices.values_list("id", flat=True)
     )
 
     results = []
-    correct_count = 0
+    total_score = 0
+    possible_score = 0
 
     for question in questions:
-        correct_choices = list(
-            question.choices.filter(is_correct=True)
-        )
-        selected_choices = list(
-            question.choices.filter(id__in=selected_ids)
-        )
-        is_correct = (
-            len(correct_choices) == 1
-            and len(selected_choices) == 1
-            and selected_choices[0].id == correct_choices[0].id
+        question_choices = list(question.choices.all())
+        selected_choices = [
+            choice for choice in question_choices
+            if choice.id in selected_ids
+        ]
+        correct_choices = [
+            choice for choice in question_choices
+            if choice.is_correct
+        ]
+
+        is_correct = question.is_get_score(
+            [choice.id for choice in selected_choices]
         )
 
+        possible_score += question.grade
         if is_correct:
-            correct_count += 1
+            total_score += question.grade
 
         results.append({
             "question": question,
-            "choices": list(question.choices.all()),
+            "choices": question_choices,
             "selected_choices": selected_choices,
             "correct_choices": correct_choices,
             "is_correct": is_correct,
         })
 
-    total = len(results)
-    grade = round(correct_count * 100 / total) if total else 0
+    correct_count = sum(
+        1 for result in results if result["is_correct"]
+    )
+    total_questions = len(results)
+
+    grade = (
+        round(total_score * 100 / possible_score)
+        if possible_score > 0 else 0
+    )
 
     return render(
         request,
@@ -211,6 +230,8 @@ def show_exam_result(request, course_id, submission_id):
             "results": results,
             "grade": grade,
             "correct_count": correct_count,
-            "total_questions": total,
+            "total_questions": total_questions,
+            "total_score": total_score,
+            "possible_score": possible_score,
         },
     )
