@@ -50,7 +50,44 @@
                     </div>
                 {% endfor %}
             </div>
-            <!-- Course detail template changes go here -->
+
+            <hr>
+            <h3>Mock Exam</h3>
+            {% if course.question_set.all %}
+                <form method="post"
+                      action="{% url 'onlinecourse:submit' course.id %}">
+                    {% csrf_token %}
+                    {% for question in course.question_set.all %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                {{ forloop.counter }}. {{ question.content }}
+                            </div>
+                            <div class="card-body">
+                                {% for choice in question.choices.all %}
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               name="choice_{{ question.id }}"
+                                               value="{{ choice.id }}"
+                                               id="choice_{{ choice.id }}"
+                                               required>
+                                        <label class="form-check-label"
+                                               for="choice_{{ choice.id }}">
+                                            {{ choice.content }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <button class="btn btn-primary mt-3" type="submit">
+                        Submit Exam
+                    </button>
+                </form>
+            {% else %}
+                <p>No exam questions have been added to this course yet.</p>
+            {% endif %}
+
     </div>
 </body>
 </html>
