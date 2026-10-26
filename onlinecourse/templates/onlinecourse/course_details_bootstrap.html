@@ -60,7 +60,7 @@
                     {% for question in course.question_set.all %}
                         <div class="card mt-3">
                             <div class="card-header">
-                                {{ forloop.counter }}. {{ question.content }}
+                                {{ forloop.counter }}. {{ question.question_text }}
                             </div>
                             <div class="card-body">
                                 {% for choice in question.choices.all %}
@@ -73,7 +73,7 @@
                                                required>
                                         <label class="form-check-label"
                                                for="choice_{{ choice.id }}">
-                                            {{ choice.content }}
+                                            {{ choice.choice_text }}
                                         </label>
                                     </div>
                                 {% endfor %}
