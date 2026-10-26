@@ -131,7 +131,7 @@ class Choice(models.Model):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="choices"
     )
-choice_text = models.CharField(max_length=100)
+    choice_text = models.CharField(max_length=100)
     is_correct = models.BooleanField(default=False)
 
     @property
@@ -151,4 +151,4 @@ class Submission(models.Model):
     choices = models.ManyToManyField(Choice, blank=True)
 
     def __str__(self):
-    return f"Submission for {self.enrollment.id}"
+        return f"Submission for {self.enrollment.id}"
